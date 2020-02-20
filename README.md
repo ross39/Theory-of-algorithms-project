@@ -45,7 +45,7 @@ Add additional notes about how to deploy this on a live system
 Using git 
 ## Authors
 
-* **Ross Heaney** - 
+* **Ross Heaney** 
 
 ## License
 
