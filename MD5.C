@@ -110,4 +110,47 @@ void md5(uint8_t *initial_msg, size_t initial_len) {
             printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3], d);
             puts("");
 #endif        
+             uint32_t f, g;
+ 
+             if (i < 16) {
+                f = (b & c) | ((~b) & d);
+                g = i;
+            } else if (i < 32) {
+                f = (d & b) | ((~d) & c);
+                g = (5*i + 1) % 16;
+            } else if (i < 48) {
+                f = b ^ c ^ d;
+                g = (3*i + 5) % 16;          
+            } else {
+                f = c ^ (b | (~d));
+                g = (7*i) % 16;
+            }
+
+#ifdef ROUNDS
+            printf("f=%x g=%d w[g]=%x\n", f, g, w[g]);
+#endif 
+            uint32_t temp = d;
+            d = c;
+            c = b;
+            printf("rotateLeft(%x + %x + %x + %x, %d)\n", a, f, k[i], w[g], r[i]);
+            b = b + LEFTROTATE((a + f + k[i] + w[g]), r[i]);
+            a = temp;
+
+
+ 
+        }
+ 
+        // Add this chunk's hash to result so far:
+ 
+        h0 += a;
+        h1 += b;
+        h2 += c;
+        h3 += d;
+ 
+    }
+ 
+    // cleanup
+    free(msg);
+ 
+}
 
