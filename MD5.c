@@ -15,6 +15,7 @@
 //Lets define some file stuff for dealing with files 
 char ch, file_name[25];
 FILE *fp;
+int character;
  
 // These vars will contain the hash
 uint32_t h0, h1, h2, h3;
@@ -165,6 +166,11 @@ void md5(uint8_t *initial_msg, size_t initial_len) {
 }
  
 int main(int argc, char **argv) {
+
+    printf("Hi and welcome to the MD5 Hash portal\n");
+    printf("Here is how to use this portal\n");
+    printf("Comile it using the command gcc -o md5 -O3 -lm md5.c\n");
+    printf("You can use it on single strings or entire files");
  
     if (argc < 2) {
         printf("usage: %s 'string'\n", argv[0]);
@@ -180,7 +186,7 @@ int main(int argc, char **argv) {
         //Now we want to read in the contents of the file 
         //And then we want to hash it
         strcpy(file_name, argv[1]);
-        fp = fopen(file_name, "");
+        fp = fopen(file_name, "r");
 
         if (fp == NULL)
         {
@@ -189,10 +195,28 @@ int main(int argc, char **argv) {
         }else
         {
             printf("Im going to hash the contents of this file\n");
-            //  while((ch = fgetc(fp)) != EOF){
-            //   size_t len = strlen(ch);
-            //   md5(ch, len);
-            // }
+              while((character= fgetc(fp)) != EOF){
+               size_t len = strlen(character);
+               md5(ch, len);
+                
+              uint8_t *p;
+
+               p=(uint8_t *)&h0;
+              printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3], h0);
+ 
+              p=(uint8_t *)&h1;
+              printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3], h1);
+ 
+              p=(uint8_t *)&h2;
+              printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3], h2);
+ 
+              p=(uint8_t *)&h3;
+              printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3], h3);
+              puts("");
+              fclose(fp);
+              fp = NULL;
+              return 0;
+            }
         }
         
         
