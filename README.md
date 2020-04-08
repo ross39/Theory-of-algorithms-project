@@ -14,7 +14,7 @@ You will need the following: </br>
 3. An understanding of how and why the MD5 message-digest algorithm works. </br>
 
 
-For MacOs and other unix operating systems. My system is MacOS so this is what I used 
+For MacOs and other unix operating systems. My system is MacOS so this is what I used to check that the c compiler is installed.
 ```
 gcc --version 
 ```
@@ -26,17 +26,28 @@ Just clone this repository using git or else download the zip file.
 git clone https://github.com/ross39/Theory-of-algorithms-project
 ```
 
-## Running the tests
-
-Explain how to run the automated tests for this system
-
-
-
 ## Deployment
 
-Add additional notes about how to deploy this on a live system
+Deployment of this is very simple. Just clone the repo and compile it using the command
+
+```
+gcc -o md5 -O3 -lm md5.c
+```
+
+Then you can run it one of two ways. To run it on a single piece of text you can use 
+
+```
+./MD5 xxxxx  => where xxxxx is the text you want to hash
+```
+
+or you can give it a text file.
+
+```
+./MD5 xxxxx.txt => where xxxxx.txt is the name of your text file
+```
 
 ## Built With
+
 
 
 
@@ -51,5 +62,6 @@ Using git
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
 
-## Acknowledgments
+## Acknowledgments and Refrences
+
 
