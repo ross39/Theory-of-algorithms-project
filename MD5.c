@@ -11,11 +11,13 @@
 // leftrotate function definition
 #define LEFTROTATE(x, c) (((x) << (c)) | ((x) >> (32 - (c))))
 
+#define MAXCHAR 1000
+
 
 //Lets define some file stuff for dealing with files 
-char ch, file_name[25];
+char str[MAXCHAR], buffer, filename[30];
 FILE *fp;
-int character;
+long numbytes;
  
 // These vars will contain the hash
 uint32_t h0, h1, h2, h3;
@@ -182,42 +184,46 @@ int main(int argc, char **argv) {
 
     char *dot = strrchr(argv[1], '.');
     if (dot && !strcmp(dot, ".txt")){
-        //printf("This ends in .txt");
+        printf("This ends in .txt");
         //Now we want to read in the contents of the file 
         //And then we want to hash it
-        strcpy(file_name, argv[1]);
-        fp = fopen(file_name, "r");
+       strcpy(filename, argv[1]);
+       fp = fopen(filename, "r");
 
-        if (fp == NULL)
-        {
+       if(fp == NULL){
            perror("Error while opening the file.\n");
            exit(EXIT_FAILURE);
-        }else
-        {
-            printf("Im going to hash the contents of this file\n");
-              while((character= fgetc(fp)) != EOF){
-               size_t len = strlen(character);
-               md5(ch, len);
-                
-              uint8_t *p;
+       }else
+       {
+           printf("Hashing");
+           while (fgets(str, MAXCHAR, fp) != NULL){
+               size_t len = strlen(str);
+               md5(str, len);
 
-               p=(uint8_t *)&h0;
+               uint8_t *p;
+ 
+              // display result
+ 
+              p=(uint8_t *)&h0;
               printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3], h0);
  
               p=(uint8_t *)&h1;
               printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3], h1);
  
-              p=(uint8_t *)&h2;
-              printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3], h2);
+             p=(uint8_t *)&h2;
+             printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3], h2);
  
-              p=(uint8_t *)&h3;
-              printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3], h3);
-              puts("");
-              fclose(fp);
-              fp = NULL;
-              return 0;
-            }
-        }
+            p=(uint8_t *)&h3;
+            printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3], h3);
+            fclose(fp);
+            return 0;
+           }   
+           
+           
+           
+       }
+       
+        
         
         
     }
