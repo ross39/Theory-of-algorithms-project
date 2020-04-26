@@ -1,3 +1,8 @@
+/*
+ * Simple MD5 implementation
+ *
+ * Compile with: gcc -o md5 -O3 -lm md5.c
+ */
 #include <stdio.h>
 #include <stdint.h>
 #include <inttypes.h>
@@ -7,36 +12,26 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <string.h>
+//gcc library for upper and lower bounds on case in switch
 #include <limits.h>
-
-
-//Program will now have to accept command line arguements and I want this to work on any file 
-//So I will need to change it up a bit
-
+ 
+// leftrotate function definition
 #define LEFTROTATE(x, c) (((x) << (c)) | ((x) >> (32 - (c))))
 
+#define MAXCHAR 10000
+
+
+//Lets define some file stuff for dealing with files 
+char str[MAXCHAR], buffer, filename[30];
+FILE *fp;
+long numbytes;
+ 
 // These vars will contain the hash
 uint32_t h0, h1, h2, h3;
-
-
-void md5(int opt, int opts, char *option){
-
-FILE *fileToHash;
-if(opt == 1)
-{
-  fileToHash = fopen(option, "rb");
-  if(!fileToHash)
-  {
-    printf("error opening the file");
-    return;
-  }
-}
-else if(opts == 1)
-{
-  //Need to do something here
-}
-
- // Message (to prepare)
+ 
+void md5(uint8_t *initial_msg, size_t initial_len) {
+ 
+    // Message (to prepare)
     uint8_t *msg = NULL;
  
     // Note: All variables are unsigned 32 bit and wrap modulo 2^32 when calculating
@@ -80,78 +75,247 @@ else if(opts == 1)
     // Pre-processing: padding with zeros
     //append "0" bit until message length in bit ≡ 448 (mod 512)
     //append length mod (2 pow 64) to message
+ 
+    int new_len = ((((initial_len + 8) / 64) + 1) * 64) - 8;
+ 
+    msg = calloc(new_len + 64, 1); // also appends "0" bits 
+                                   // (we alloc also 64 extra bytes...)
+    memcpy(msg, initial_msg, initial_len);
+    msg[initial_len] = 128; // write the "1" bit
+ 
+    uint32_t bits_len = 8*initial_len; // note, we append the len
+    memcpy(msg + new_len, &bits_len, 4);           // in bits at the end of the buffer
+ 
+    // Process the message in successive 512-bit chunks:
+    //for each 512-bit chunk of message:
+    int offset;
+    for(offset=0; offset<new_len; offset += (512/8)) {
+ 
+        // break chunk into sixteen 32-bit words w[j], 0 ≤ j ≤ 15
+        uint32_t *w = (uint32_t *) (msg + offset);
+ 
+#ifdef DEBUG
+        printf("offset: %d %x\n", offset, offset);
+ 
+        int j;
+        for(j =0; j < 64; j++) printf("%x ", ((uint8_t *) w)[j]);
+        puts("");
+#endif
+ 
+        // Initialize hash value for this chunk:
+        uint32_t a = h0;
+        uint32_t b = h1;
+        uint32_t c = h2;
+        uint32_t d = h3;
+ 
+        // Main loop:
+        uint32_t i;
+        for(i = 0; i<64; i++) {
+
+#ifdef ROUNDS
+            uint8_t *p;
+            printf("%i: ", i);
+            p=(uint8_t *)&a;
+            printf("%2.2x%2.2x%2.2x%2.2x ", p[0], p[1], p[2], p[3], a);
+         
+            p=(uint8_t *)&b;
+            printf("%2.2x%2.2x%2.2x%2.2x ", p[0], p[1], p[2], p[3], b);
+         
+            p=(uint8_t *)&c;
+            printf("%2.2x%2.2x%2.2x%2.2x ", p[0], p[1], p[2], p[3], c);
+         
+            p=(uint8_t *)&d;
+            printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3], d);
+            puts("");
+#endif        
+
+ 
+            uint32_t f, g;
+ 
+             if (i < 16) {
+                f = (b & c) | ((~b) & d);
+                g = i;
+            } else if (i < 32) {
+                f = (d & b) | ((~d) & c);
+                g = (5*i + 1) % 16;
+            } else if (i < 48) {
+                f = b ^ c ^ d;
+                g = (3*i + 5) % 16;          
+            } else {
+                f = c ^ (b | (~d));
+                g = (7*i) % 16;
+            }
+
+#ifdef ROUNDS
+            printf("f=%x g=%d w[g]=%x\n", f, g, w[g]);
+#endif 
+            uint32_t temp = d;
+            d = c;
+            c = b;
+            printf("rotateLeft(%x + %x + %x + %x, %d)\n", a, f, k[i], w[g], r[i]);
+            b = b + LEFTROTATE((a + f + k[i] + w[g]), r[i]);
+            a = temp;
 
 
-
-
-    /*
-    *
-    *  Now that our variables are defined
-    * Just read in the file as a message 
-    * and hash!
-    * 
-    **/ 
-
-
-
+ 
+        }
+ 
+        // Add this chunk's hash to result so far:
+ 
+        h0 += a;
+        h1 += b;
+        h2 += c;
+        h3 += d;
+ 
+    }
+ 
+    // cleanup
+    free(msg);
+ 
 }
+ 
+int main(int argc, char **argv) {
+
+  char *cvalue = NULL;
+  //for string argument
+  int sflag = 0;
+  //for file argument
+  int fflag = 0;
+  //reading strring options
+  int c;
+
+   while ((c = getopt (argc, argv, "s:f:")) != -1)
+  {
+    switch (c)
+    {
+      case 's':
+        sflag = 1;
+        cvalue = optarg;
+        break;
+      case 'f':
+        fflag = 1;
+        cvalue = optarg;
+        break;
+      case '?':
+        if (optopt == 'c')
+          fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+        else if (isprint (optopt))
+          fprintf (stderr, "Unknown option `-%c'.\n", optopt);
+        else
+          fprintf (stderr, "Unknown option character `\\x%x'.\n",optopt);
+        return 1;
+      default:
+        abort ();
+    }//end parse options
+  }
+  if(sflag == 0 && fflag == 0)
+  {
+    printf("Please select one option, -f [filename], -s[string] \n");
+    return 1;
+  }
+  printf("sflag = %d, fflag = %d, cvalue = %s \n",sflag,fflag,cvalue);
+
+    clock_t begin = clock();
+    /*Read in the files depending on the command line arguments
+    * and then hash**/
+
+   FILE *hashFile;
+   if(fflag ==1)
+   {
+     hashFile = fopen(cvalue, "rb");
+     if(!hashFile)
+     {
+       printf("There is an error opening the file. Please make sure it's in the same directory and the file path is correct\n");
+       return 0;
+     }
+
+     //Now that its a file we need to do the following steps
+     //1. Read in the file 
+     //2. Hash it
+     //3. Return the hash
+     while(fgets(str, MAXCHAR, hashFile) != NULL){
+       size_t len = strlen(str);
+       md5(str, len);
+
+       //var char digest[16] := h0 append h1 append h2 append h3 //(Output is in little-endian)
+    uint8_t *p;
+ 
+    // display result
+ 
+    p=(uint8_t *)&h0;
+    printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3], h0);
+ 
+    p=(uint8_t *)&h1;
+    printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3], h1);
+ 
+    p=(uint8_t *)&h2;
+    printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3], h2);
+ 
+    p=(uint8_t *)&h3;
+    printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3], h3);
+    puts("");
+ 
+    return 0;
+     }
 
 
-int main(int argc, char **argv){
+   }
+   else if(sflag == 1)
+   {
+     //This means that the user wants to has a single string
+    char *msg = cvalue;
+    size_t len = strlen(msg);
+
+     md5(msg, len);
+    // }
+ 
+    //var char digest[16] := h0 append h1 append h2 append h3 //(Output is in little-endian)
+    uint8_t *p;
+ 
+    // display result
+ 
+    p=(uint8_t *)&h0;
+    printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3], h0);
+ 
+    p=(uint8_t *)&h1;
+    printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3], h1);
+ 
+    p=(uint8_t *)&h2;
+    printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3], h2);
+ 
+    p=(uint8_t *)&h3;
+    printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3], h3);
+    puts("");
+ 
+    return 0;
+   }
+
+  
+    clock_t end = clock();
 
     printf("Hi and welcome to the MD5 Hash portal\n");
     printf("Here is how to use this portal\n");
     printf("Comile it using the command gcc -o md5 -O3 -lm md5.c\n");
     printf("You can use it on single strings or entire files");
-
-    //Declare string value
-    char *svalue = NULL;
-    //declare string flag argument
-    int sflag = 0;
-    //declare file flag argument;
-    int fflag = 0;
-
-    int c;
-
-    //Need to parse the command line arguments.....Use getopt to get the command line arguments
-    //A while loop to loop over the arguments and process them until the user tells us to stop(-1)
-    while((c = getopt (argc, argv, "s:f:")) != -1)
-    {
-      //Now that we have entered the loop we need to see what the user actually wants
-
-      switch(c)
-      {
-        case 's':
-          sflag = 1;
-          svalue = optarg;
-          break;
-        case 'f':
-          fflag = 1;
-          svalue = optarg;
-          break;
-        case '?':
-          if(optopt == 'c')
-            fprintf(stderr, "Option -%c requires an argument.\n", optopt);
-          else if (isprint (optopt))
-            fprintf(stderr, "Unknown option `-%c'.\n", optopt);
-          else 
-            fprintf(stderr, "Unkown option character '\\x%x'.\n", optopt);
-          return 1;
-        default:
-          abort();
-      }
+ 
+    if (argc < 2) {
+        printf("usage: %s 'string'\n", argv[0]);
+        return 1;
     }
 
-    if(sflag == 9 && fflag == 0)
-    {
-      printf("Make to select an option, -f [filename], -s [string]\n");
-      return 1;
-    }
+    
 
-    printf("sflag = %d, fflag = %d, cvalue = %s \n", sflag, fflag, svalue);
-
-    clock_t begin = clock();
-    md5(fflag, sflag, svalue);
-    clock_t end = clock();
-return 0;
+    
+           
+           
+       
+       
+        
+        
+        
+    
+ 
+    
+ 
+   
 }
