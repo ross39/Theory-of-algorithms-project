@@ -1,3 +1,6 @@
+# The file md5Updated.c reflects the changes made to the project due to the covid-19 crisis. The other file present was my project up until the changes were made.
+
+
 ### MD5 HASH ALOGRITHM
 Hi and welcome to my project for the module theory of algorithms. The goal of the project is to code the MD5 message-digest algorithm. MD5 was designed by Ronald Rivest in 1991 to replace an earlier hash function MD4, and was specified in 1992 as RFC 1321
 
